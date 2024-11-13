@@ -140,10 +140,6 @@ int main(int argc, char* argv[]) {
             if (timings && !silent) {
                 cout << "Total time taken: " << (end - start) << " seconds\n";
             }
-
-            if (!silent) {
-                cout << "Abstract Syntax Tree generated.\n";
-            }
         }
     }
     return 0;
