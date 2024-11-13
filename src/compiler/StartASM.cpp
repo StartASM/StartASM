@@ -4,17 +4,17 @@
 #include <string>
 #include <algorithm>
 
-// Include the Easter egg functions
+//Include the Easter egg functions
 #include "misc/.Secrets.h"
 
 using namespace std;
 
-// Function to check if a command-line option exists
+//Function to check if a command-line option exists
 bool cmdOptionExists(char** begin, char** end, const string& option) {
     return find(begin, end, option) != end;
 }
 
-// Function to check for valid .sasm file extension
+//Function to check for valid .sasm file extension
 bool isValidSASMFile(const string& filename) {
     if (filename.length() >= 5) {
         return filename.substr(filename.length() - 5) == ".sasm";
@@ -34,26 +34,26 @@ void displayHelp() {
     cout << title << endl;
     cout << "StartASM Compiler Usage:" << endl;
     cout << "  startasm compile <filepath.sasm> [options]" << endl;
+    cout << "  startasm ast <filepath.sasm> [options]" << endl;
     cout << "Options:" << endl;
     cout << "  --help        Display this help message and exit" << endl;
     cout << "  --timings     Print out timings for each compilation step" << endl;
-    cout << "  --tree        Print out the AST (Abstract Syntax Tree)" << endl;
-    cout << "  --ir        Print out generated LLVM IR" << endl;
+    cout << "  --ir        Print out generated LLVM IR (if compiling)" << endl;
     cout << "  --silent      Suppress output (except syntax errors)" << endl;
     cout << "  --truesilent  Suppress all output, including syntax errors" << endl;
-    cout << "Note that the use of --silent or --truesilent will override output flags such as --tree and --timings." << endl;
+    cout << "Note that the use of --silent or --truesilent will override output flags such --timings." << endl;
 }
 
 int main(int argc, char* argv[]) {
-    // Check for --help flag before anything else
+    //Check for --help flag before anything else
     if (cmdOptionExists(argv, argv + argc, "--help")) {
         displayHelp();
         return 0;
     }
 
-    // Check for the secret command
+    //Check for the secret command
     if (argc > 1 && string(argv[1]) == "secret") {
-        // Display a random Easter egg
+        //Display a random Easter egg
         srand(time(nullptr));
         int choice = rand() % 5;
 
@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    // Requires at least 2 arguments: the command and the filepath
+    //Requires at least 2 arguments: the command and the filepath
     if (argc < 3) {
         if (!cmdOptionExists(argv, argv + argc, "--truesilent")) {
             cerr << "Missing arguments." << endl;
@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
     }
 
     string command(argv[1]);
-    if (command != "compile") {
+    if (command != "compile" && command!= "ast") {
         if (!cmdOptionExists(argv, argv + argc, "--truesilent")) {
             cerr << "Unknown command: " << command << endl;
             cerr << "For usage information: startasm --help" << endl;
@@ -101,30 +101,49 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Flags
+    //Flags
     bool timings = cmdOptionExists(argv, argv + argc, "--timings");
-    bool tree = cmdOptionExists(argv, argv + argc, "--tree");
     bool ir = cmdOptionExists(argv, argv + argc, "--ir");
     bool silent = cmdOptionExists(argv, argv + argc, "--silent") || cmdOptionExists(argv, argv + argc, "--truesilent");
     bool truesilent = cmdOptionExists(argv, argv + argc, "--truesilent");
 
-    // Adjust the compiler instantiation to pass the truesilent flag
-    Compiler StartASMCompiler(filepath, silent, timings, tree, ir);
+    //Adjust the compiler instantiation to pass the truesilent flag
+    Compiler StartASMCompiler(filepath, silent, timings, ir);
     double start = omp_get_wtime();
-    if (!StartASMCompiler.compileCode()) {
-        if (!truesilent) {
-            cout << StartASMCompiler.getStatus() << endl;
+    if (command == "compile") {
+        if (!StartASMCompiler.compileCode()) {
+            if (!truesilent) {
+                cout << StartASMCompiler.getStatus() << endl;
+            }
+        }
+        else {
+            double end = omp_get_wtime();
+
+            if (timings && !silent) {
+                cout << "Total time taken: " << (end - start) << " seconds\n";
+            }
+
+            if (!silent) {
+                cout << StartASMCompiler.getNumLines() << " lines compiled.\n";
+            }
         }
     }
-    else {
-        double end = omp_get_wtime();
-
-        if (timings && !silent) {
-            cout << "Total time taken: " << (end - start) << " seconds\n";
+    else if (command == "ast") {
+        if (!StartASMCompiler.outputAST()) {
+            if (!truesilent) {
+                cout << StartASMCompiler.getStatus() << endl;
+            }
         }
+        else {
+            double end = omp_get_wtime();
 
-        if (!silent) {
-            cout << StartASMCompiler.getNumLines() << " lines compiled.\n";
+            if (timings && !silent) {
+                cout << "Total time taken: " << (end - start) << " seconds\n";
+            }
+
+            if (!silent) {
+                cout << "Abstract Syntax Tree generated.\n";
+            }
         }
     }
     return 0;

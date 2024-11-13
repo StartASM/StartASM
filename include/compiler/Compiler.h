@@ -21,7 +21,7 @@ class CodeGenerator;
 class Compiler {
     public:
         //Constructors and Destructors
-        Compiler(std::string& pathname, bool cmdSilent, bool cmdTimings, bool cmdTree, bool cmdIr);
+        Compiler(std::string& pathname, bool cmdSilent, bool cmdTimings, bool cmdIr);
         ~Compiler();
 
         Compiler(const Compiler&) = delete;
@@ -50,6 +50,8 @@ class Compiler {
         //Public facing compile method
         //Code Compiling
         bool compileCode();
+        //Public facing tree method (for interpreter
+        bool outputAST();
 
 
     private:

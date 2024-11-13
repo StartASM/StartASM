@@ -65,6 +65,7 @@ set(HEADERS
         include/scopecheck/ScopeChecker.h
         include/ast/Visitor.h
         include/ast/Operands.h
+        include/lib/json.hpp
 )
 
 # Specify the executable target
