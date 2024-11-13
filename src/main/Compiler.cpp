@@ -132,13 +132,16 @@ bool Compiler::compileCode() {
 
     cmdTimingPrint("Compiler: Generating LLVM IR\n");
     start = omp_get_wtime();
-    std::future<void> generateCodeFuture = std::async(std::launch::async, &CodeGenerator::generateCode, m_codeGenerator, m_AST->getRoot(), m_numLines);
-    std::future<void> clearCodeLinesFuture = std::async(std::launch::async, [this]() {
+    auto generateCodeFuture = std::async(std::launch::async, &CodeGenerator::generateCode, m_codeGenerator, m_AST->getRoot(), m_numLines, std::ref(m_statusMessage));
+    auto clearCodeLinesFuture = std::async(std::launch::async, [this]() {
         m_codeLines.clear();
         m_codeLines.shrink_to_fit();
     });
-    generateCodeFuture.wait();
-    clearCodeLinesFuture.wait();
+    bool generateCodeResult = generateCodeFuture.get();
+    clearCodeLinesFuture.get();
+    if(!generateCodeResult) {
+        return false;
+    }
     cmdTimingPrint("Time taken: " + std::to_string(omp_get_wtime() - start) + "\n\n");
 
     return true;

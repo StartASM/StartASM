@@ -6,11 +6,13 @@ using namespace std;
 using namespace llvm;
 using namespace AST;
 
-//Static LLVM Components Decleration
+//Static LLVM Components Declaration
 std::unique_ptr<llvm::LLVMContext> CodeGenerator::TheContext;
 std::unique_ptr<llvm::IRBuilder<>> CodeGenerator::Builder;
 std::unique_ptr<llvm::Module> CodeGenerator::TheModule;
-std::map<std::string, llvm::Value *> CodeGenerator::NamedValues;
+std::vector<llvm::Value*> CodeGenerator::IR;
+std::unordered_map<std::string, llvm::Value *> CodeGenerator::NamedValues;
+std::unordered_map<std::string, llvm::AllocaInst *> CodeGenerator::NamedAllocas;
 
 
 CodeGenerator::CodeGenerator() {
@@ -26,21 +28,41 @@ CodeGenerator::CodeGenerator() {
     }
 }
 
-CodeGenerator::~CodeGenerator() {
-    //Just to ensure proper order of deletion of LLVM components
-    TheModule.reset();
-    Builder.reset();
-    TheContext.reset();
-}
+bool CodeGenerator::generateCode(AST::ASTNode *AST, int numLines, string& errorString) {
+    //Initialize registers into NamedValues and NamedAllocas
+    NamedValues["r0"] = nullptr;
+    NamedValues["r1"] = nullptr;
+    NamedValues["r2"] = nullptr;
+    NamedValues["r3"] = nullptr;
+    NamedValues["r4"] = nullptr;
+    NamedValues["r5"] = nullptr;
+    NamedValues["r6"] = nullptr;
+    NamedValues["r7"] = nullptr;
+    NamedValues["r8"] = nullptr;
+    NamedValues["r9"] = nullptr;
+    NamedAllocas["r0"] = nullptr;
+    NamedAllocas["r1"] = nullptr;
+    NamedAllocas["r2"] = nullptr;
+    NamedAllocas["r3"] = nullptr;
+    NamedAllocas["r4"] = nullptr;
+    NamedAllocas["r5"] = nullptr;
+    NamedAllocas["r6"] = nullptr;
+    NamedAllocas["r7"] = nullptr;
+    NamedAllocas["r8"] = nullptr;
+    NamedAllocas["r9"] = nullptr;
 
-void CodeGenerator::generateCode(AST::ASTNode *AST, int numLines) {
-    //Initialize LLVM Value Data Structures
-    vector<pair<ASTConstants::OperandType, Value*>> localValues(3, pair(ASTConstants::EMPTY, nullptr));
-    OperandValues = vector<vector<pair<ASTConstants::OperandType, Value*>>>(numLines+1, localValues);
-    InstructionValues = vector<Value*>(numLines+1, nullptr);
-
+    AST::RootNode* ASTRoot = dynamic_cast<AST::RootNode*>(AST);
     //Visit the root and iterate over the AST
-    AST->accept(*this);
+    cout << "Iterating over AST" << endl;
+    if (ASTRoot!=nullptr) {
+        ASTRoot->acceptSingleThreaded(*this);
+    }
+
+    if (!m_errorString.empty()) {
+        errorString += m_errorString;
+        return false;
+    }
+    return true;
 }
 
 //Root Node Visitor (Do nothing)
@@ -48,164 +70,335 @@ void CodeGenerator::visit(AST::RootNode& node) {}
 
 
 //Instruction Generators
+//Standard instructions
 void CodeGenerator::visit(AST::MoveInstruction& node) {
-    //std::cout << "TODO: MoveInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    cout << "Move instruction" << endl;
+    //LHS - src register and type
+    Value* val = localContext[0].second.first;
+    //RHS - dest register
+    AllocaInst* alloc = localContext[1].second.second;
+    localContext.clear();
+    if (!val) {
+        //Register is not initialized, throw error
+        m_errorString = "Uninitialized Register Access. Attempted to read uninitialized register " + node.getChildren().at(0)->getNodeValue() +" at line " + to_string(node.getLine()) + "\n Make sure the register is set before moving its contents!\n";
+        m_continueGeneration = false;
+    }
+    else {
+        //Generate LLVM move instruction
+        IR.push_back(Builder->CreateStore(val, alloc));
+        //Update register type
+
+    }
 }
 
 void CodeGenerator::visit(AST::LoadInstruction& node) {
-   // std::cout << "TODO: LoadInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: LoadInstruction\n";
 }
 
 void CodeGenerator::visit(AST::StoreInstruction& node) {
-    //std::cout << "TODO: StoreInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: StoreInstruction\n";
 }
 
 void CodeGenerator::visit(AST::CreateInstruction& node) {
-    //std::cout << "TODO: CreateInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    cout << "Create instruction" << endl;
+    //LHS - src literal
+    Value* val = localContext[0].second.first;
+    cout << "(gotten val)" << endl;
+    //RHS - dest register
+    AllocaInst* alloc = localContext[1].second.second;
+    cout << "(gotten alloc)" << endl;
+    localContext.clear();
+    //Create value to allocInst, assign type to register
+    IR.push_back(Builder->CreateStore(val, alloc));
 }
 
 void CodeGenerator::visit(AST::CastInstruction& node) {
-    //std::cout << "TODO: CastInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: CastInstruction\n";
 }
 
 void CodeGenerator::visit(AST::AddInstruction& node) {
-    //std::cout << "TODO: AddInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    cout << "Add instruction" << endl;
+    //LHS1 - src register 1
+    Value* val1 = localContext[0].second.first;
+    //LHS2 - src register 2
+    Value* val2 = localContext[1].second.first;
+    //RHS - dest register
+    AllocaInst* alloc = localContext[2].second.second;
+    localContext.clear();
+    IR.push_back(Builder->CreateStore(Builder->CreateAdd(val1, val2), alloc));
 }
 
 void CodeGenerator::visit(AST::SubInstruction& node) {
-    //std::cout << "TODO: SubInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    //LHS1 - src register 1
+    Value* val1 = localContext[0].second.first;
+    //LHS2 - src register 2
+    Value* val2 = localContext[1].second.first;
+    //RHS - dest register
+    AllocaInst* alloc = localContext[2].second.second;
+    localContext.clear();
+    IR.push_back(Builder->CreateStore(Builder->CreateSub(val1, val2), alloc));
 }
 
 void CodeGenerator::visit(AST::MultiplyInstruction& node) {
-    //std::cout << "TODO: MultiplyInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    //LHS1 - src register 1
+    Value* val1 = localContext[0].second.first;
+    //LHS2 - src register 2
+    Value* val2 = localContext[1].second.first;
+    //RHS - dest register
+    AllocaInst* alloc = localContext[2].second.second;
+    localContext.clear();
+    IR.push_back(Builder->CreateStore(Builder->CreateMul(val1, val2), alloc));
 }
 
 void CodeGenerator::visit(AST::DivideInstruction& node) {
-    //std::cout << "TODO: DivideInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    //LHS1 - src register 1
+    Value* val1 = localContext[0].second.first;
+    //LHS2 - src register 2
+    Value* val2 = localContext[1].second.first;
+    //RHS - dest register
+    AllocaInst* alloc = localContext[2].second.second;
+    localContext.clear();
+    IR.push_back(Builder->CreateStore(Builder->CreateSDiv(val1, val2), alloc));
 }
 
 void CodeGenerator::visit(AST::OrInstruction& node) {
-    //std::cout << "TODO: OrInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: OrInstruction\n";
 }
 
 void CodeGenerator::visit(AST::AndInstruction& node) {
-    //std::cout << "TODO: AndInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: AndInstruction\n";
 }
 
 void CodeGenerator::visit(AST::NotInstruction& node) {
-    //std::cout << "TODO: AndInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: AndInstruction\n";
 }
 
 void CodeGenerator::visit(AST::ShiftInstruction& node) {
-    //std::cout << "TODO: ShiftInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: ShiftInstruction\n";
 }
 
 void CodeGenerator::visit(AST::CompareInstruction& node) {
-    //std::cout << "TODO: CompareInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: CompareInstruction\n";
 }
 
 void CodeGenerator::visit(AST::JumpInstruction& node) {
-    //std::cout << "TODO: JumpInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: JumpInstruction\n";
 }
 
 void CodeGenerator::visit(AST::CallInstruction& node) {
-    //std::cout << "TODO: CallInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: CallInstruction\n";
 }
 
 void CodeGenerator::visit(AST::PushInstruction& node) {
-    //std::cout << "TODO: PushInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: PushInstruction\n";
 }
 
 void CodeGenerator::visit(AST::PopInstruction& node) {
-    //std::cout << "TODO: PopInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: PopInstruction\n";
 }
 
 void CodeGenerator::visit(AST::ReturnInstruction& node) {
-    //std::cout << "TODO: ReturnInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: ReturnInstruction\n";
 }
 
 void CodeGenerator::visit(AST::StopInstruction& node) {
-    //std::cout << "TODO: StopInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: StopInstruction\n";
 }
 
-void CodeGenerator::visit(AST::InputInstruction& node) {
-    //std::cout << "TODO: InputInstruction\n";
-}
 
-void CodeGenerator::visit(AST::OutputInstruction& node) {
-    //std::cout << "TODO: OutputInstruction\n";
-}
-
+//Runtime library instructions
 void CodeGenerator::visit(AST::PrintInstruction& node) {
-    //std::cout << "TODO: PrintInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: PrintInstruction\n";
 }
 
 void CodeGenerator::visit(AST::LabelInstruction& node) {
-    //std::cout << "TODO: LabelInstruction\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: LabelInstruction\n";
 }
 
-void CodeGenerator::visit(AST::CommentInstruction& node) {
-    //std::cout << "TODO: CommentInstruction\n";
+void CodeGenerator::visit(AST::InputInstruction& node) {
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: InputInstruction\n";
 }
+
+void CodeGenerator::visit(AST::OutputInstruction& node) {
+    if (!m_continueGeneration) {
+        return;
+    }
+    std::cout << "TODO: OutputInstruction\n";
+}
+
+void CodeGenerator::visit(AST::CommentInstruction& node) {}
+
 
 
 //Operand Generators
+//Standard operands and types
 void CodeGenerator::visit(AST::RegisterOperand& node) {
-    std::cout << "-> TODO: RegisterOperand\n";
+    if (!m_continueGeneration) {
+        return;
+    }
+    cout << "-> Register" << endl;
+    //Get the current register value at position
+    //Whether to throw an error if the register is null depends on the instruction and register relationship (e.g. src vs dest)
+    localContext.push_back(pair(node.getOperandType(), pair(NamedValues[node.getNodeValue()], NamedAllocas[node.getNodeValue()])));
 }
 
 void CodeGenerator::visit(AST::InstructionAddressOperand& node) {
+    if (!m_continueGeneration) {
+        return;
+    }
     std::cout << "-> TODO: InstructionAddressOperand\n";
 }
 
 void CodeGenerator::visit(AST::MemoryAddressOperand& node) {
+    if (!m_continueGeneration) {
+        return;
+    }
     std::cout << "-> TODO: MemoryAddressOperand\n";
 }
 
 void CodeGenerator::visit(AST::IntegerOperand& node) {
+    if (!m_continueGeneration) {
+        return;
+    }
+    cout << "-> Integer" << endl;
     //Basic 32bit int
-    cout << "Converting int" << endl;
-    OperandValues[node.getLine()][node.getPos()] = pair(node.getOperandType(),ConstantInt::get(*TheContext, APInt(32, stoi(node.getNodeValue()), true)));
+    localContext.push_back(pair(node.getOperandType(), pair(ConstantInt::get(*TheContext, APInt(32, stoi(node.getNodeValue()), true)), nullptr)));
 }
 
 void CodeGenerator::visit(AST::FloatOperand& node) {
+    if (!m_continueGeneration) {
+        return;
+    }
+    cout << "-> Float" << endl;
     //Basic 32bit float
-    cout << "Converting float" << endl;
-    OperandValues[node.getLine()][node.getPos()] = pair(node.getOperandType(), ConstantFP::get(*TheContext, APFloat(stof(node.getNodeValue()))));
+    localContext.push_back(pair(node.getOperandType(), pair(ConstantFP::get(*TheContext, APFloat(stof(node.getNodeValue()))), nullptr)));
 }
 
 void CodeGenerator::visit(AST::BooleanOperand& node) {
+    if (!m_continueGeneration) {
+        return;
+    }
+    cout << "-> Boolean" << endl;
     //Bool is treated as 1 bit integer
-    cout << "Converting bool" << endl;
-    OperandValues[node.getLine()][node.getPos()] = pair(node.getOperandType(), ConstantInt::get(*TheContext, APInt(1, (node.getNodeValue() == "true"), false)));
+    localContext.push_back(pair(node.getOperandType(), pair(ConstantInt::get(*TheContext, APInt(1, (node.getNodeValue() == "true"), false)), nullptr)));
 }
 
 void CodeGenerator::visit(AST::CharacterOperand& node) {
+    if (!m_continueGeneration) {
+        return;
+    }
+    cout << "-> Character" << endl;
     //Char is treated as 8-bit ASCII integer
-    cout << "Converting char" << endl;
-    OperandValues[node.getLine()][node.getPos()] = pair(node.getOperandType(), ConstantInt::get(*TheContext, APInt(8, node.getNodeValue()[0], false)));
+    localContext.push_back(pair(node.getOperandType(), pair(ConstantInt::get(*TheContext, APInt(8, node.getNodeValue()[0], false)), nullptr)));
 }
+
 
 //String and newline operands are for runtime library print functions
 void CodeGenerator::visit(AST::StringOperand& node) {
-    OperandValues[node.getLine()][node.getPos()] = pair(node.getOperandType(), nullptr);
+    if (!m_continueGeneration) {
+        return;
+    }
+    cout << "-> Register" << endl;
+    localContext.push_back(pair(node.getOperandType(), pair(nullptr, nullptr)));
 }
 
 void CodeGenerator::visit(AST::NewlineOperand& node) {
-    OperandValues[node.getLine()][node.getPos()] = pair(node.getOperandType(), nullptr);
+    if (!m_continueGeneration) {
+        return;
+    }
+    localContext.push_back(pair(node.getOperandType(), pair(nullptr, nullptr)));
 }
+
 
 //Conditions are for instruction type decision-making
 void CodeGenerator::visit(AST::TypeConditionOperand& node) {
-    OperandValues[node.getLine()][node.getPos()] = pair(node.getOperandType(), nullptr);
+    if (!m_continueGeneration) {
+        return;
+    }
+    localContext.push_back(pair(node.getOperandType(), pair(nullptr, nullptr)));
 }
 
 void CodeGenerator::visit(AST::ShiftConditionOperand& node) {
-    OperandValues[node.getLine()][node.getPos()] = pair(node.getOperandType(), nullptr);
+    if (!m_continueGeneration) {
+        return;
+    }
+    localContext.push_back(pair(node.getOperandType(), pair(nullptr, nullptr)));
 }
 
 void CodeGenerator::visit(AST::JumpConditionOperand& node) {
-    OperandValues[node.getLine()][node.getPos()] = pair(node.getOperandType(), nullptr);
+    if (!m_continueGeneration) {
+        return;
+    }
+    localContext.push_back(pair(node.getOperandType(), pair(nullptr, nullptr)));
 }
 
 void CodeGenerator::printIR() {

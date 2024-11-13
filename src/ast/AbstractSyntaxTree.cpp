@@ -44,10 +44,21 @@ namespace AST {
         //Visit for root node first (usually nothing)
         visitor.visit(*this);
         //Visit for all instruction children (multithreaded)
-        //#pragma omp parallel for schedule(auto) default(none) shared(visitor)
+        #pragma omp parallel for schedule(auto) default(none) shared(visitor)
         for (auto* child : m_children) {
             child->accept(visitor);
         }
+    }
+    void RootNode::acceptSingleThreaded(AST::Visitor &visitor) {
+        //Visit for root node first (usually nothing)
+        visitor.visit(*this);
+        #pragma omp critical
+        {
+            //Visit for all instruction children (single threaded)
+            for (auto* child : m_children) {
+                child->accept(visitor);
+            }
+        };
     }
 
     // InstructionNode Implementation

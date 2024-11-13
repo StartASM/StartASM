@@ -14,12 +14,12 @@
 class CodeGenerator : public AST::Visitor {
     public:
         CodeGenerator();
-        ~CodeGenerator();
+        ~CodeGenerator() = default;
         //Remove copy and assignment operator
         CodeGenerator(const CodeGenerator&) = delete;
         CodeGenerator& operator=(const CodeGenerator&) = delete;
 
-        void generateCode(AST::ASTNode* AST, int numLines);
+        bool generateCode(AST::ASTNode* AST, int numLines, std::string& errorString);
         void printIR();
 
     private:
@@ -27,11 +27,17 @@ class CodeGenerator : public AST::Visitor {
         static std::unique_ptr<llvm::LLVMContext> TheContext;
         static std::unique_ptr<llvm::IRBuilder<>> Builder;
         static std::unique_ptr<llvm::Module> TheModule;
-        static std::map<std::string, llvm::Value *> NamedValues;
 
-        //LLVM Value Context
-        std::vector<std::vector<std::pair<ASTConstants::OperandType, llvm::Value*>>> OperandValues;
-        std::vector<llvm::Value*> InstructionValues;
+        //IR Vector
+        static std::vector<llvm::Value*> IR;
+
+        //Maps to keep track of register information
+        static std::unordered_map<std::string, llvm::Value *> NamedValues;
+        static std::unordered_map<std::string, llvm::AllocaInst *> NamedAllocas;
+
+        //Code generation local context
+        //Pairs each operand type with any declared values or allocas
+        std::vector<std::pair<ASTConstants::OperandType, std::pair<llvm::Value*, llvm::AllocaInst*>>> localContext;
 
         //Root node visitor
         void visit(AST::RootNode& node) override;
@@ -76,6 +82,10 @@ class CodeGenerator : public AST::Visitor {
         void visit(AST::TypeConditionOperand& node) override;
         void visit(AST::ShiftConditionOperand& node) override;
         void visit(AST::JumpConditionOperand& node) override;
+
+        //Code generation error flag
+        bool m_continueGeneration = true;
+        std::string m_errorString;
 };
 
 #endif
