@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
     if (command == "compile") {
         if (!StartASMCompiler.compileCode()) {
             if (!truesilent) {
-                cout << StartASMCompiler.getStatus() << endl;
+                cerr << StartASMCompiler.getStatus() << endl;
             }
         }
         else {
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
     else if (command == "ast") {
         if (!StartASMCompiler.outputAST()) {
             if (!truesilent) {
-                cout << StartASMCompiler.getStatus() << endl;
+                cerr << StartASMCompiler.getStatus() << endl;
             }
         }
         else {

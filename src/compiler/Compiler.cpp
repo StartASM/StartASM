@@ -27,7 +27,7 @@ Compiler::Compiler(std::string& pathname, bool cmdSilent, bool cmdTimings, bool 
     m_ASTBuilder(new ASTBuilder()),
     m_semanticAnalyzer(new SemanticAnalyzer(m_codeLines)),
     m_scopeChecker(new ScopeChecker(m_codeLines)),
-    m_codeGenerator(new CodeGenerator()),
+    //m_codeGenerator(new CodeGenerator()),
     m_pathname(pathname) {}
 
 Compiler::~Compiler() {
@@ -38,7 +38,7 @@ Compiler::~Compiler() {
     delete m_ASTBuilder;
     delete m_semanticAnalyzer;
     delete m_scopeChecker;
-    delete m_codeGenerator;
+    //delete m_codeGenerator;
 }
 
 void Compiler::cmdPrint(const std::string& message) const {
@@ -173,6 +173,11 @@ bool Compiler::outputAST() {
     }
     cmdTimingPrint("Time taken: " + to_string(omp_get_wtime()-start) + "\n\n");
 
-    //JSONIFY and output AST//
-
+    //Serialize and return AST as JSON
+    cmdTimingPrint("Compiler: Serializing AST to JSON\n");
+    start = omp_get_wtime();
+    auto jsonAST = m_AST->toJson();
+    std::cout << jsonAST.dump(4) << std::endl;
+    cmdTimingPrint("Time taken: " + to_string(omp_get_wtime() - start) + "\n\n");
+    return true;
 }
