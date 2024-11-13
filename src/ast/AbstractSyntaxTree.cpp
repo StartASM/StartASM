@@ -1,13 +1,25 @@
 #include "ast/Instructions.h"
 #include "ast/Operands.h"
+#include "lib/json.hpp"
 
 namespace AST {
+
+    // Helper Function to Convert NodeType Enum to String
+    std::string nodeTypeToString(ASTConstants::NodeType type) {
+        switch (type) {
+            case ASTConstants::NodeType::ROOT: return "ROOT";
+            case ASTConstants::NodeType::INSTRUCTION: return "INSTRUCTION";
+            case ASTConstants::NodeType::OPERAND: return "OPERAND";
+            default: return "UNKNOWN";
+        }
+    }
+
     // ASTNode Implementation
     ASTNode::ASTNode(ASTConstants::NodeType type, const std::string &value)
             : m_nodeType(type), m_nodeValue(value) {}
 
     ASTNode::~ASTNode() {
-        for (auto & child : m_children) {
+        for (auto &child : m_children) {
             delete child;
         }
         m_children.clear();
@@ -36,18 +48,40 @@ namespace AST {
         m_children.reserve(numChildren);
     }
 
+    nlohmann::json ASTNode::toJson() const {
+        nlohmann::json jsonNode;
+
+        // Add common fields
+        jsonNode["type"] = nodeTypeToString(m_nodeType);  // Use helper for string representation
+        jsonNode["value"] = m_nodeValue;
+        jsonNode["children"] = nlohmann::json::array();  // Explicitly initialize as an array
+
+        // Serialize children
+        for (const auto& child : m_children) {
+            if (child != nullptr) {
+                jsonNode["children"].push_back(child->toJson());  // Recursively serialize children
+            }
+        }
+
+        return jsonNode;
+    }
+
     // RootNode Implementation
     RootNode::RootNode() : ASTNode(ASTConstants::NodeType::ROOT, "") {}
     RootNode::~RootNode() = default;
 
     void RootNode::accept(AST::Visitor &visitor) {
-        //Visit for root node first (usually nothing)
         visitor.visit(*this);
-        //Visit for all instruction children (multithreaded)
-        #pragma omp parallel for schedule(auto) default(none) shared(visitor)
+#pragma omp parallel for schedule(auto) default(none) shared(visitor)
         for (auto* child : m_children) {
             child->accept(visitor);
         }
+    }
+
+    nlohmann::json RootNode::toJson() const {
+        nlohmann::json jsonRoot = ASTNode::toJson();
+        jsonRoot["type"] = "ROOT";  // Explicitly set the type as a string for clarity
+        return jsonRoot;
     }
 
     // InstructionNode Implementation
@@ -56,11 +90,31 @@ namespace AST {
 
     InstructionNode::~InstructionNode() = default;
 
+    nlohmann::json InstructionNode::toJson() const {
+        nlohmann::json jsonNode = ASTNode::toJson();
+
+        jsonNode["instruction_type"] = static_cast<int>(m_instructionType);  // Convert enums to int
+        jsonNode["num_operands"] = static_cast<int>(m_numOperands);
+        jsonNode["line"] = m_line;
+
+        return jsonNode;
+    }
+
     // OperandNode Implementation
     OperandNode::OperandNode(const std::string &nodeValue, ASTConstants::OperandType operandType, int line, short int pos)
             : ASTNode(ASTConstants::NodeType::OPERAND, nodeValue), m_operandType(operandType), m_line(line), m_pos(pos) {}
 
     OperandNode::~OperandNode() = default;
+
+    nlohmann::json OperandNode::toJson() const {
+        nlohmann::json jsonNode = ASTNode::toJson();
+
+        jsonNode["operand_type"] = static_cast<int>(m_operandType);  // Convert enums to int
+        jsonNode["line"] = m_line;
+        jsonNode["position"] = m_pos;
+
+        return jsonNode;
+    }
 
     // AbstractSyntaxTree Implementation
     AbstractSyntaxTree::AbstractSyntaxTree() {
@@ -159,25 +213,8 @@ namespace AST {
         }
     }
 
-    void AbstractSyntaxTree::printTree() const {
-        printNode(m_root, 0);
-    }
-
-    void AbstractSyntaxTree::printNode(const ASTNode* node, int level) const {
-        if (node == nullptr) return;
-
-        std::string indent(level * 4, ' ');
-
-        const AST::OperandNode* operandNode = dynamic_cast<const AST::OperandNode*>(node);
-
-        if (operandNode != nullptr) {
-            std::cout << indent << node->getNodeValue() << " - OperandType: " << operandNode->getOperandType() << std::endl;
-        } else {
-            std::cout << indent << node->getNodeValue() << " (" << node->getNumChildren() << " children)" << std::endl;
-        }
-
-        for (const auto& child : node->getChildren()) {
-            printNode(child, level + 1);
-        }
+    nlohmann::json AbstractSyntaxTree::toJson() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_root->toJson();
     }
 }
