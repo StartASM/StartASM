@@ -9,6 +9,7 @@
 #include <mutex>
 #include "pt/ParseTree.h"
 #include "Visitor.h"
+#include "lib/json.hpp"
 
 namespace ASTConstants {
     enum NodeType {ROOT, INSTRUCTION, OPERAND};
@@ -20,7 +21,7 @@ namespace ASTConstants {
 namespace AST {
     class Visitor;
 
-    // Broad AST Node
+    //Broad AST Node
     class ASTNode {
     public:
         ASTNode(ASTConstants::NodeType type, const std::string &value);
@@ -30,17 +31,20 @@ namespace AST {
 
         virtual void accept(Visitor& visitor) = 0;
 
-        // Getters
+        //Getters
         std::string getNodeValue() const { return m_nodeValue; }
         ASTConstants::NodeType getNodeType() const { return m_nodeType; }
         int getNumChildren() const { return static_cast<int>(m_children.size()); }
         const std::vector<ASTNode*>& getChildren() const { return m_children; }
 
-        // Setters
+        //Setters
         void setNodeValue(const std::string &value) { m_nodeValue = value; }
         ASTNode* insertChild(ASTNode* childNode);
         ASTNode* childAt(int index);
         void reserveChildren(int numChildren);
+
+        //JSON serialization
+        virtual nlohmann::json toJson() const;
 
     protected:
         ASTConstants::NodeType m_nodeType;
@@ -49,7 +53,7 @@ namespace AST {
         mutable std::mutex m_mutex;
     };
 
-    // Specialized root node class (top level in AST)
+    //Specialized root node class (top level in AST)
     class RootNode: public ASTNode {
         friend class AST;
     public:
@@ -59,9 +63,12 @@ namespace AST {
         RootNode& operator=(const RootNode&) = delete;
 
         void accept(Visitor& visitor) override;
+
+        // Override JSON serialization
+        nlohmann::json toJson() const override;
     };
 
-    // Template instruction node class
+    //Template instruction node class
     class InstructionNode: public ASTNode {
     public:
         InstructionNode(const std::string &nodeValue, ASTConstants::InstructionType instructionType, ASTConstants::NumOperands numOperands, int line);
@@ -71,9 +78,12 @@ namespace AST {
 
         ASTConstants::InstructionType getInstructionType() const { return m_instructionType; }
         ASTConstants::NumOperands getNumOperands() const { return m_numOperands; }
-        int getLine() const {return m_line; }
+        int getLine() const { return m_line; }
         void setInstructionType(ASTConstants::InstructionType type) { m_instructionType = type; }
         void setNumOperands(ASTConstants::NumOperands num) { m_numOperands = num; }
+
+        //Override JSON serialization
+        nlohmann::json toJson() const override;
 
     private:
         ASTConstants::InstructionType m_instructionType;
@@ -81,7 +91,7 @@ namespace AST {
         int m_line;
     };
 
-    // Operand Node Class
+    //Operand Node Class
     class OperandNode: public ASTNode {
     public:
         OperandNode(const std::string &nodeValue, ASTConstants::OperandType operandType, int line, short int pos);
@@ -90,9 +100,11 @@ namespace AST {
         OperandNode& operator=(const OperandNode&) = delete;
 
         ASTConstants::OperandType getOperandType() const { return m_operandType; }
-        int getLine() const {return m_line; }
-        short int getPos() const {return m_pos;}
+        int getLine() const { return m_line; }
+        short int getPos() const { return m_pos; }
         void setOperandType(ASTConstants::OperandType type) { m_operandType = type; }
+
+        nlohmann::json toJson() const override;
 
     private:
         ASTConstants::OperandType m_operandType;
@@ -100,7 +112,7 @@ namespace AST {
         short int m_pos;
     };
 
-    // AST wrapper class
+    //AST wrapper class
     class AbstractSyntaxTree {
     public:
         AbstractSyntaxTree();
@@ -111,11 +123,16 @@ namespace AST {
         ASTConstants::OperandType convertOperandType(PTConstants::OperandType type);
         void printTree() const;
 
+        //JSON serialization for the entire tree
+        nlohmann::json toJson() const;
+
     private:
         ASTNode* m_root;
         std::unordered_map<std::string, ASTConstants::InstructionType> m_instructionDictionary;
         mutable std::mutex m_mutex;
+
         void printNode(const ASTNode* node, int level) const;
     };
 }
+
 #endif
