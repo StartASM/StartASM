@@ -1,12 +1,7 @@
-# StartASM
+# StartASM Compiler
 
 ## Overview
-StartASM is a personal project that aims to create a simple, beginner-friendly assembly language. Its main goals are:
-- Create a readable, English-like syntax with greater verbosity and clarity
-- Abstract many complicated facets of assembly programming to reduce complexity
-- Introduce assembly programming concepts in a straightforward, simplified manner
-
-StartASM was created after personally struggling to learn x86 as a complete newcomer to assembly programming. I want this project to be a simpler, more intuitive introduction to assembly concepts that could be an effective stepping stone toward learning industry-standard languages. It is also a personal exercise in self-learning and is my first time engaging with many of these concepts myself.
+The following repository contains the main compiler for the StartASM language. It is the heart of the language implementation and is required for other modules of the project such as Ignition. It's implemented in C++, with an LLVM backend, and optimized for multithreading with OpenMP.
 
 ## Usage
 Download the repository and open it in a code editor. This project uses Cmake, thus to build run the following in the terminal within the root folder:
@@ -23,18 +18,18 @@ The compiler can be invoked via a CLI. Here are the possible options when envoki
 ```
 StartASM Compiler Usage:
   startasm compile <filepath.sasm> [options]
+  startmasm ast <filepath.sasm> [options]
 Options:
   --help        Display this help message and exit
   --timings     Print out timings for each compilation step
-  --tree        Print out the AST (Abstract Syntax Tree)
   --ir        Print out generated LLVM IR
   --silent      Suppress output (except syntax errors)
   --truesilent  Suppress all output, including syntax errors
-Note that the use of --silent or --truesilent will override output flags such as --tree and --timings.
+Note that the use of --silent or --truesilent will override output flags such as --timings.
 ```
 You can also check the `examples` folder for examples. Each code file contains a comment explaining its purpose. There are included testing scripts available in the `testing` folder, including benchmarking and AST testing.
 
-Also make sure to check out the `documentations` folder for more information about StartASM's features, syntax, and some examples! This is still very much a work-in-progress project, so updates will be continual.
+Also make sure to check out the `documentations` folder for more information about StartASM's features, syntax, and some examples! This is still very much a work-in-progress project, so updates will be on the way.
 
 ## License
 This project is licensed under the MIT license. Feel free to fork or contribute to this project or use it in any manner you like.
