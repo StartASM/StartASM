@@ -1,41 +1,26 @@
 cmake_minimum_required(VERSION 3.10)
 project(startasm)
 
+# Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Ensure position-independent code
+# Ensure position-independent code (for shared libraries)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-# Set the CMAKE_PREFIX_PATH to the directory containing LLVMConfig.cmake if necessary
-if(APPLE)
-    set(CMAKE_PREFIX_PATH "/usr/local/opt/llvm")
-    set(LLVM_DIR "/usr/local/opt/llvm/lib/cmake/llvm")
-    # Set the compiler to use Homebrew LLVM
-    set(CMAKE_C_COMPILER "/usr/local/opt/llvm/bin/clang")
-    set(CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++")
-    set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/llvm/include")
-    set(OpenMP_C_LIB_NAMES "omp")
-    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/llvm/include")
-    set(OpenMP_CXX_LIB_NAMES "omp")
-    set(OpenMP_omp_LIBRARY "/usr/local/opt/llvm/lib/libomp.dylib")
-endif()
 
 # Find LLVM package
 find_package(LLVM REQUIRED CONFIG)
-
-# Include LLVM headers
 include_directories(${LLVM_INCLUDE_DIRS})
+add_definitions(${LLVM_DEFINITIONS})
 
 # Find OpenMP package
 find_package(OpenMP REQUIRED)
 
-# Add LLVM and OpenMP definitions
-add_definitions(${LLVM_DEFINITIONS})
+# Add definitions for ABI compatibility
 add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
 
-# List all source files and headers
+# Source files and headers
 set(SOURCES
         src/compiler/Compiler.cpp
         src/lexer/Lexer.cpp
@@ -68,10 +53,10 @@ set(HEADERS
         include/lib/json.hpp
 )
 
-# Specify the executable target
+# Define executable target
 add_executable(startasm ${SOURCES} ${HEADERS})
 
-# Include project headers
+# Include headers from the include directory
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 # Link against LLVM and OpenMP libraries
@@ -82,26 +67,3 @@ target_link_libraries(startasm ${LLVM_LIBS} OpenMP::OpenMP_CXX)
 set_target_properties(startasm PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
-
-# Platform-specific settings
-if(APPLE)
-    message(STATUS "Configuring for macOS")
-    # macOS-specific settings here
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-    find_library(LIBCXX_LIB c++)
-    find_library(LIBCXXABI_LIB c++abi)
-    target_link_libraries(startasm ${LIBCXX_LIB} ${LIBCXXABI_LIB})
-elseif(UNIX)
-    message(STATUS "Configuring for Linux")
-    # Linux-specific settings here
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -no-pie -lstdc++fs")
-endif()
-
-# Ensure CMake RPATH settings for macOS
-if(APPLE)
-    set(CMAKE_MACOSX_RPATH 1)
-    set(CMAKE_INSTALL_RPATH "@executable_path/../lib")
-else()
-    set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
-endif()
