@@ -115,6 +115,7 @@ int main(int argc, char* argv[]) {
             if (!truesilent) {
                 cerr << StartASMCompiler.getStatus() << endl;
             }
+            return 1;
         }
         else {
             double end = omp_get_wtime();
@@ -133,6 +134,7 @@ int main(int argc, char* argv[]) {
             if (!truesilent) {
                 cerr << StartASMCompiler.getStatus() << endl;
             }
+            return 1;
         }
         else {
             double end = omp_get_wtime();

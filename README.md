@@ -4,18 +4,35 @@
 The following repository contains the main compiler for the StartASM language. It is the heart of the language implementation and is required for other modules of the project such as Ignition. It's implemented in C++, with an LLVM backend, and optimized for multithreading with OpenMP.
 
 ## Usage
-Download the repository and open it in a code editor. This project uses Cmake, thus to build run the following in the terminal within the root folder:
+### Building and Running with Docker
+The StartASM compiler can be built on your local machine with Docker. To do so, follow these steps:
+
+1. **Install Docker**:
+Make sure Docker is installed on your machine. You can download and install Docker from the Docker website or through a package manager.
+For most Debian Linux-based systems, you can typically install it with:
 ```bash
-mkdir build
-cd build
-cmake ..
-make
+sudo apt update
+sudo apt install docker.io
 ```
 
-Run the StartASM executable. Create a text file with StartASM code and place it into the root directory, then run the executable. StartASM uses the `.sasm` file extension. When running the executable and providing a filename, you can either include the `.sasm` extension or omit it, but don't append a different file extension (like .txt).
-
-The compiler can be invoked via a CLI. Here are the possible options when envoking `./startasm --help`:
+2. **Build the Docker Image**:
+Clone this repository and navigate to the project directory. Then build the Docker image:
+```bash
+docker build -t startasm .
 ```
+
+3. **Run the Compiler**:
+Invoke the compiler inside the Docker container:
+```bash
+docker run --rm -it startasm compile <filepath.sasm> [options]
+```
+
+For example, to compile a file:
+```bash
+docker run --rm -it startasm compile examples/<filepath.sasm>
+```
+To bring up more info, you can invoke the `--help` flag, the following output of which can be seen here:
+```bash
 StartASM Compiler Usage:
   startasm compile <filepath.sasm> [options]
   startmasm ast <filepath.sasm> [options]

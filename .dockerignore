@@ -1,0 +1,88 @@
+# Version control
+.git
+.gitmodules
+.svn
+.hg
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+build/
+cmake-build-*/
+bin/
+obj/
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+*.cmake
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.log
+*.t
+
+# Compiled files
+*.o
+*.lo
+*.slo
+*.a
+*.so
+*.so.*
+*.dll
+*.dylib
+*.lib
+*.lai
+
+# Executables
+*.exe
+*.out
+*.app
+startasm
+StartASMCompiler
+
+# Debug and profiling
+*.dSYM/
+*.pdb
+*.ilk
+*.map
+*.gcda
+*.gcno
+*.gcov
+*.info
+*.lcov
+
+# Coverage and testing
+*.benchmark-*
+*.gtest-*
+
+# IDE and editor files
+*.iml
+*.user
+*.user.*
+*.kdev4
+*.sublime-workspace
+*.pyc
+__pycache__/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+Desktop.ini
+._*
+
+# StressTest-specific files
+examples/StressTest.sasm
+testing/StressTest.sasm
+
+# Exclude self and Dockerfile
+!Dockerfile
+!.dockerignore
