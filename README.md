@@ -17,22 +17,22 @@ sudo apt install docker.io
 
 2. **Build the Docker Image**:
 Clone this repository and navigate to the project directory. Then build the Docker image:
-```bash
+```
 docker build -t startasm .
 ```
 
 3. **Run the Compiler**:
 Invoke the compiler inside the Docker container:
-```bash
+```
 docker run --rm -it startasm compile <filepath.sasm> [options]
 ```
 
 For example, to compile a file:
-```bash
-docker run --rm -it startasm compile examples/<filepath.sasm>
+```
+docker run --rm -it startasm compile examples/ExampleCode.sasm
 ```
 To bring up more info, you can invoke the `--help` flag, the following output of which can be seen here:
-```bash
+```
 StartASM Compiler Usage:
   startasm compile <filepath.sasm> [options]
   startmasm ast <filepath.sasm> [options]

@@ -58,7 +58,7 @@ bool Compiler::compileCode() {
     //Lex code//
     cmdTimingPrint("Compiler: Lexing code\n");
     if (!m_lexer->lexFile(m_pathname, m_codeLines, m_codeTokens)) {
-        m_statusMessage = "Lexing failed! Either the path was invalid or the file could not be found.";
+        m_statusMessage = "Lexing failed. Either the path was invalid or the file could not be found.";
         return false;
     }
     cmdTimingPrint("Time taken: " + to_string(omp_get_wtime()-start) + "\n\n");
