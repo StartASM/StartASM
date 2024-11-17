@@ -269,7 +269,7 @@ void SemanticAnalyzer::visit(AST::StoreInstruction& node) {
 void SemanticAnalyzer::visit(AST::JumpInstruction& node) {
     const std::vector<std::unordered_set<ASTConstants::OperandType>> semanticTemplate = {
             {JUMPCONDITION},
-            {INSTRUCTIONADDRESS, REGISTER},
+            {INSTRUCTIONADDRESS},
             {EMPTY}
     };
     int line = node.getLine();

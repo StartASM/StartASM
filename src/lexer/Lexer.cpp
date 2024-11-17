@@ -92,24 +92,26 @@ bool Lexer::lexFile(const std::string& filename, std::vector<std::string>& codeL
     return true;
 }
 
-//Read file method
 bool Lexer::readFile(const string& filename, vector<string>& codeLines) {
-    //Create a file stream and open the file
+    // Create a file stream and open the file
     ifstream file(filename);
-    //If file is not open, return false
+    // If file is not open, return false
     if (!file.is_open()) {
         return false;
     }
-    //Temporary string to hold the line
+    // Temporary string to hold the line
     string line;
-    //Loop through every line in the file
+    // Loop through every line in the file
     while (getline(file, line)) {
-        //Push back the line into the vector
-        codeLines.push_back(line);
+        // Check if the line is not just whitespace
+        if (line.find_first_not_of(" \t\n\r\f\v") != string::npos) {
+            // Push back the line into the vector
+            codeLines.push_back(line);
+        }
     }
-    //Close the file
+    // Close the file
     file.close();
-    //Return true
+    // Return true
     return true;
 }
 
